@@ -46,6 +46,7 @@ agently/
 │   ├── guard.py    # gate deterministik: update workflow aman auto-apply atau ditahan
 │   ├── agent.py    # definisi Agent + @agent.tool wrapper
 │   └── main.py     # entry point: run_health_check(), run_create_workflow(), run_fix_workflow()
+├── tokopedia/      # agent pesanan Tokopedia (TikTok Shop Partner API), READ-ONLY, tanpa PII ke LLM
 └── tests/
 ```
 
@@ -66,6 +67,7 @@ Jangan daftarkan tool tulis ke `@agent.tool`.
 
 ## Status saat ini
 
+- `tokopedia/`: belum dites ke toko asli; hanya baca (auth.py token berputar, tools.py signing HMAC)
 - `ci_cd/`, `n8n/`: belum dites ke GitLab / n8n asli. Endpoint PUT update workflow n8n perlu diverifikasi.
 - Belum ada webhook handler (FastAPI/Flask); masih dipanggil manual/CLI
 - `tests/`: unit test tanpa jaringan/LLM (`pytest`, pakai `TestModel` dari pydantic-ai)

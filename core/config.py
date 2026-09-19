@@ -26,3 +26,13 @@ OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "")
 
 # Trace aktivitas model ke stderr (lokal, tanpa layanan luar)
 TRACE = os.environ.get("AGENTLY_TRACE", "").lower() in ("1", "true", "yes")
+
+# Tokopedia (TikTok Shop Partner API, custom app untuk toko sendiri)
+TTS_API_URL = os.environ.get("TTS_API_URL", "https://open-api.tiktokglobalshop.com").rstrip("/")
+TTS_AUTH_URL = os.environ.get("TTS_AUTH_URL", "https://auth.tiktok-shops.com").rstrip("/")
+TTS_APP_KEY = os.environ.get("TTS_APP_KEY", "")
+TTS_APP_SECRET = os.environ.get("TTS_APP_SECRET", "")
+TTS_ACCESS_TOKEN = os.environ.get("TTS_ACCESS_TOKEN", "")
+TTS_REFRESH_TOKEN = os.environ.get("TTS_REFRESH_TOKEN", "")
+TTS_SHOP_CIPHER = os.environ.get("TTS_SHOP_CIPHER", "")
+TTS_TOKEN_FILE = os.environ.get("TTS_TOKEN_FILE", ".tts_tokens.json")

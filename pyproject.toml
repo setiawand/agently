@@ -17,4 +17,4 @@ dev = ["pytest"]
 pythonpath = ["."]
 
 [tool.setuptools]
-packages = ["core", "ci_cd", "n8n"]
+packages = ["core", "ci_cd", "n8n", "tokopedia"]

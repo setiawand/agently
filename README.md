@@ -5,6 +5,7 @@ Kumpulan agent operasional ringan berbasis [Pydantic AI](https://ai.pydantic.dev
 | Agent | Fungsi | Status |
 |-------|--------|--------|
 | `ci_cd/` | Diagnosis pipeline GitLab yang gagal, lalu komentar otomatis di MR bila yakin | Belum dites ke GitLab asli |
+| `tokopedia/` | Cek pesanan toko Tokopedia (pesanan terlambat kirim, permintaan batal pembeli) + ringkasan LLM. **Read-only** | Belum dites ke toko asli |
 | `n8n/` | Health check workflow, buat workflow baru, perbaiki workflow bermasalah | Health check sudah dites ke n8n asli; create/fix belum |
 
 ## Prinsip desain: gate human-in-the-loop ada di kode
@@ -47,6 +48,10 @@ cp .env.example .env    # lalu isi nilainya
 | `LLM_THINKING` | semua agent | `off` = matikan mode thinking (kirim `reasoning_effort=none`). Mempercepat model lokal seperti qwen3.5 |
 | `LLM_PROVIDER` | semua agent | `ollama` (default) atau `openrouter` |
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | jika `openrouter` | Model dalam format OpenRouter, mis. `qwen/qwen-2.5-72b-instruct` |
+| `TTS_APP_KEY`, `TTS_APP_SECRET` | `tokopedia` | Dari app di TikTok Shop Partner Center |
+| `TTS_SHOP_CIPHER` | `tokopedia` | Opsional; kosong = otomatis jika hanya ada satu toko |
+| `TTS_TOKEN_FILE` | `tokopedia` | Lokasi token (default `.tts_tokens.json`, chmod 600, di-gitignore) |
+| `TTS_ACCESS_TOKEN`, `TTS_REFRESH_TOKEN` | `tokopedia` | Opsional, hanya untuk bootstrap; biasanya cukup `python -m tokopedia.auth` |
 | `GITLAB_URL`, `GITLAB_TOKEN` | `ci_cd` | URL tanpa trailing slash; token dengan scope `api` |
 | `N8N_URL`, `N8N_API_KEY` | `n8n` | API key dari Settings > n8n API |
 
@@ -139,6 +144,37 @@ print(r.model_dump_json(indent=2))
 
 Periksa `action_taken` dan `action_detail` di hasilnya: `applied` berarti sudah ditulis ke n8n, `escalated` berarti ditahan untuk review manusia beserta alasannya. Coba dulu di workflow yang tidak penting.
 
+### Tokopedia: cek pesanan (read-only)
+
+Tokopedia kini memakai API TikTok Shop Partner Center. Agent ini untuk **penjual dengan toko sendiri** (jenis app: *Custom app*). Yang dilakukan hanya membaca; tidak ada aksi kirim, batalkan, atau balas pembeli. Semua itu tetap manual.
+
+**Setup satu kali** (mengikuti dokumentasi resmi, [partner.tiktokshop.com](https://partner.tiktokshop.com)):
+
+1. Daftar sebagai developer di Partner Center, buat **Custom app**, aktifkan scope `seller.order.info` dan `seller.authorization.info`.
+2. Isi `TTS_APP_KEY` dan `TTS_APP_SECRET` di `.env`.
+3. Bagikan *authorization link* app ke akun seller Anda sendiri, setujui, lalu ambil `auth_code` dari redirect URL.
+4. Tukar dengan token (disimpan otomatis; access token 7 hari akan di-refresh sendiri, refresh token berputar sehingga wajib disimpan):
+
+```bash
+python -m tokopedia.auth <auth_code>
+```
+
+**Pemakaian:**
+
+```bash
+python -m tokopedia.main            # JSON laporan (tanpa LLM)
+python -m tokopedia.main summary    # ringkasan singkat via LLM (tanpa tool)
+```
+
+```python
+from tokopedia.main import run_order_check, summarize_orders
+r = run_order_check(days=7, overdue_hours=24)
+for i in r.issues:
+    print(i.kind, i.order_id, i.detail)
+```
+
+Yang ditandai: pesanan `AWAITING_SHIPMENT` lebih lama dari `overdue_hours` sejak dibuat (default 24 jam), dan pesanan dengan permintaan batal dari pembeli yang belum ditutup. Data pembeli (nama, alamat, telepon, email) dibuang di kode dan tidak pernah dikirim ke LLM. Kalau LLM gagal, hasil jatuh ke ringkasan dari kode. Error API dicek dari `code` di body respons (TikTok membalas HTTP 200 walau gagal).
+
 ### CI/CD: diagnosis pipeline
 
 ```python
@@ -166,6 +202,12 @@ agently/
 │   ├── tools.py     # fungsi GitLab API murni + redaksi secret
 │   ├── agent.py     # Agent read-only + tool baca
 │   └── main.py      # diagnose_pipeline() + gate
+├── tokopedia/       # agent pesanan Tokopedia (TikTok Shop API), read-only
+│   ├── auth.py      # token: tukar auth_code, refresh otomatis, simpan aman
+│   ├── tools.py     # tanda tangan HMAC-SHA256 + pencarian pesanan (tanpa PII)
+│   ├── report.py    # klasifikasi pesanan bermasalah (tanpa LLM)
+│   ├── schemas.py   # OrderIssue, OrderReport
+│   └── main.py      # run_order_check(), summarize_orders()
 ├── n8n/             # agent operasional n8n
 │   ├── schemas.py   # Deps, HealthReport, WorkflowProposal, AgentResult
 │   ├── tools.py     # fungsi n8n REST API murni
@@ -198,6 +240,8 @@ Test berjalan tanpa jaringan dan tanpa LLM asli (HTTP di-mock, agent memakai `Te
 |--------|---------------|
 | `Base URL belum dikonfigurasi` | `.env` tidak terbaca. Jalankan dari folder proyek |
 | `ApiError ... HTTP 401` | Token/API key salah |
+| Tokopedia: `code=...` dengan HTTP 200 | Error dari TikTok Shop (token kedaluwarsa, scope kurang, signature salah). Cek pesan di `ApiError` dan scope app di Partner Center |
+| Tokopedia: `Ditemukan N toko; isi TTS_SHOP_CIPHER` | Akun punya lebih dari satu toko; salin cipher toko yang dipakai ke `.env` |
 | Agent lama atau berputar | Model terlalu kecil untuk tool calling berantai. Coba model lebih besar, atau pindahkan pengumpulan data ke kode seperti health check |
 | `Failed to build agently` saat install | Pastikan `[tool.setuptools] packages` ada di `pyproject.toml` (sudah ada di versi terbaru) |
 | Model lokal lambat di `menunggu model...` | Lihat trace: banyak `THINKING` atau `out=` besar berarti model terlalu banyak berpikir, coba `LLM_THINKING=off`. Cek juga `ollama ps` (kolom PROCESSOR: kalau ada CPU, model tidak muat penuh di GPU/RAM) |
@@ -205,6 +249,7 @@ Test berjalan tanpa jaringan dan tanpa LLM asli (HTTP di-mock, agent memakai `Te
 
 ## Belum ada
 
+- Tokopedia: verifikasi ke toko asli (khususnya nama field respons pesanan dan `/api/v2/token/get`), webhook pesanan, dan aksi tulis (sengaja belum ada)
 - Handler webhook (FastAPI) untuk memicu `ci_cd` dari event pipeline GitLab
 - Penjadwalan (cron) untuk health check n8n dan notifikasi hasilnya
 - Verifikasi endpoint `PUT` update workflow n8n ke instance asli
