@@ -1,3 +1,0 @@
-ci_cd
-core
-n8n
