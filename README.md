@@ -63,6 +63,26 @@ Atau per panggilan: `get_model("nama/model", provider="openrouter")`; fungsi `su
 
 > **Perhatian data:** dengan OpenRouter, isi prompt (nama workflow, pesan error, log CI) dikirim ke pihak ketiga di luar jaringan kantor. Log CI memang sudah dibersihkan dari secret pola umum, tetapi nama workflow/error tidak difilter. Untuk konteks bank, pastikan kebijakan yang berlaku mengizinkan, atau tetap pakai Ollama on-prem untuk agent CI/CD.
 
+## Melihat aktivitas model (trace lokal)
+
+Tanpa Logfire atau layanan luar. Dengan `AGENTLY_TRACE=1`, setiap langkah tampil langsung di stderr: prompt yang dikirim, proses berpikir model (jika ada), tool call beserta argumen, output tool, jawaban model, jumlah token, dan waktu berjalan.
+
+```bash
+AGENTLY_TRACE=1 PYDANTIC_AI_NO_BANNER=1 python -m n8n.explain summary
+```
+
+Contoh keluaran:
+
+```
+[trace +   0.0s] PROMPT   -> model: <data_health_check> ... 
+[trace +   0.0s] menunggu model...
+[trace +  12.4s] MODEL    : Ada 2 workflow gagal ...
+[trace +  12.4s] usage: in=812 out=96
+[trace +  12.4s] selesai. total usage: ...
+```
+
+Setiap isi dipotong 400 karakter. Trace memuat isi prompt (nama workflow, error, log), jadi jangan disimpan ke tempat yang dibagi. Untuk dasbor lengkap dengan biaya, pydantic-ai juga mendukung OpenTelemetry ke backend milik sendiri.
+
 ## Cara pakai
 
 ### n8n: health check (tanpa LLM)
@@ -138,7 +158,7 @@ Rerun tidak pernah otomatis. Kalau setuju dengan rekomendasinya: `ci_cd.tools.re
 
 ```
 agently/
-├── core/            # config (.env), model Ollama, helper HTTP (ApiError)
+├── core/            # config (.env), model (Ollama/OpenRouter), helper HTTP (ApiError), trace lokal
 ├── ci_cd/           # agent diagnosis pipeline GitLab
 │   ├── schemas.py   # Deps, Diagnosis
 │   ├── tools.py     # fungsi GitLab API murni + redaksi secret

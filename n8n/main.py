@@ -2,13 +2,14 @@ import sys
 
 from core.http import ApiError
 from core.model import get_model
+from core.trace import run_agent
 from n8n import guard, health, tools
 from n8n.agent import agent
 from n8n.schemas import AgentResult, Deps
 
 
 def _run(prompt: str) -> AgentResult:
-    return agent.run_sync(prompt, deps=Deps(), model=get_model()).output
+    return run_agent(agent, prompt, deps=Deps(), model=get_model()).output
 
 
 def apply_proposal(result: AgentResult) -> AgentResult:

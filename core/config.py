@@ -21,3 +21,6 @@ N8N_API_KEY = os.environ.get("N8N_API_KEY", "")
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama").lower()
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "")
+
+# Trace aktivitas model ke stderr (lokal, tanpa layanan luar)
+TRACE = os.environ.get("AGENTLY_TRACE", "").lower() in ("1", "true", "yes")

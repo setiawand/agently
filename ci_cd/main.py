@@ -1,6 +1,7 @@
 """Entry point tipis -- panggil dari webhook GitLab (event pipeline, status=failed) atau CLI."""
 
 from core.model import get_model
+from core.trace import run_agent
 from ci_cd.agent import agent
 from ci_cd.schemas import Deps, Diagnosis
 from ci_cd import tools
@@ -10,7 +11,8 @@ AUTO_COMMENT_MIN_CONFIDENCE = 0.7
 
 def diagnose_pipeline(project_id: int, pipeline_id: int, mr_iid: int | None = None) -> Diagnosis:
     deps = Deps(project_id=project_id, pipeline_id=pipeline_id, mr_iid=mr_iid)
-    result = agent.run_sync(
+    result = run_agent(
+        agent,
         f"A GitLab pipeline just failed. project_id={project_id}, "
         f"pipeline_id={pipeline_id}. Diagnose it.",
         deps=deps,

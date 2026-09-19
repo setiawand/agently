@@ -10,6 +10,7 @@ from pydantic_ai import Agent
 
 from core.http import ApiError
 from core.model import get_model
+from core.trace import run_agent
 from n8n import health, tools
 
 explainer = Agent(
@@ -63,7 +64,7 @@ def explain_failures(model_name: str | None = None, progress=None) -> list[Failu
                 f"Workflow: {issue.workflow_name}\nNode error: {item.error_node}\n"
                 f"<pesan_error>\n{item.error_message}\n</pesan_error>"
             )
-            item.explanation = explainer.run_sync(prompt, model=model).output.strip()
+            item.explanation = run_agent(explainer, prompt, model=model).output.strip()
         except Exception as e:  # model lokal bisa gagal dengan banyak cara; data dari kode tetap dikembalikan
             item.explanation = f"(LLM gagal: {type(e).__name__}: {e})"
         out.append(item)
@@ -84,7 +85,7 @@ def summarize_health(model_name: str | None = None, progress=None) -> str:
         lines.append(f"- inactive ({len(inactive)}): " + ", ".join(inactive[:15]) + (", ..." if len(inactive) > 15 else ""))
     try:
         prompt = "<data_health_check>\n" + "\n".join(lines) + "\n</data_health_check>"
-        return summarizer.run_sync(prompt, model=get_model(model_name)).output.strip()
+        return run_agent(summarizer, prompt, model=get_model(model_name)).output.strip()
     except Exception as e:  # jangan sampai notifikasi mati hanya karena model lokal bermasalah
         return f"{report.summary} (ringkasan LLM gagal: {type(e).__name__})"
 
