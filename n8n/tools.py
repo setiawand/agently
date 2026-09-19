@@ -107,3 +107,12 @@ def fetch_health_data(max_workers: int = 8, progress=None) -> list[dict]:
             if progress:
                 progress(done, total, res["name"])
     return results  # type: ignore[return-value]
+
+
+def fetch_execution_error(execution_id: str) -> dict:
+    """Node dan pesan error dari satu eksekusi (dipotong; data eksekusi lengkap bisa besar/sensitif)."""
+    ex = _call("GET", f"/executions/{execution_id}", params={"includeData": "true"}).json()
+    result = ((ex.get("data") or {}).get("resultData")) or {}
+    err = result.get("error") or {}
+    node = (err.get("node") or {}).get("name") or result.get("lastNodeExecuted")
+    return {"node": node, "message": str(err.get("message") or "(tidak ada pesan error)")[:500]}

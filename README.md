@@ -61,6 +61,22 @@ python -m n8n.main > health.json        # simpan hasilnya saja
 
 Setiap workflow diklasifikasi `failing` (eksekusi terakhir error/crashed), `error` (eksekusi gagal dibaca), atau `inactive`. Yang sehat tidak masuk daftar `issues`.
 
+### n8n: penjelasan kegagalan (LLM kecil, tanpa tool)
+
+Kode mengambil workflow `failing` beserta node dan pesan error eksekusi terakhir. LLM hanya menulis penjelasan singkat, tanpa tool dan tanpa JSON terstruktur, jadi cocok untuk model kecil atau kuantisasi agresif.
+
+```bash
+OLLAMA_MODEL=qwen3.5:9b python -m n8n.explain
+```
+
+```python
+from n8n.explain import explain_failures
+for f in explain_failures(model_name="qwen3.5:9b"):
+    print(f.workflow_name, f.error_node, f.explanation)
+```
+
+Kalau LLM gagal, `error_node` dan `error_message` dari kode tetap dikembalikan dan `explanation` berisi catatan kegagalan.
+
 ### n8n: buat dan perbaiki workflow (memakai LLM)
 
 ```python
@@ -104,6 +120,7 @@ agently/
 │   ├── schemas.py   # Deps, HealthReport, WorkflowProposal, AgentResult
 │   ├── tools.py     # fungsi n8n REST API murni
 │   ├── health.py    # klasifikasi health check (tanpa LLM)
+│   ├── explain.py   # penjelasan kegagalan (LLM tanpa tool, model kecil ok)
 │   ├── guard.py     # gate: update workflow aman atau ditahan
 │   ├── agent.py     # Agent read-only untuk create/fix
 │   └── main.py      # run_health_check/run_create_workflow/run_fix_workflow

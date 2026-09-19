@@ -121,3 +121,33 @@ def test_fetch_health_data_reports_progress(monkeypatch):
     d = tools.fetch_health_data(progress=lambda done, total, name: seen.append((done, total)))
     assert [w["id"] for w in d] == ["0", "1", "2"]
     assert seen == [(0, 3), (1, 3), (2, 3), (3, 3)]
+
+
+def test_explain_failures(monkeypatch):
+    from pydantic_ai.models.test import TestModel
+    from n8n import explain
+
+    monkeypatch.setattr(tools, "fetch_health_data", lambda progress=None: [
+        {"id": "1", "name": "bad", "active": True, "executions": [{"id": "8", "status": "error"}]},
+        {"id": "2", "name": "ok", "active": True, "executions": [{"id": "9", "status": "success"}]},
+    ])
+    monkeypatch.setattr(tools, "fetch_recent_executions", lambda i, n: [{"id": "8"}])
+    monkeypatch.setattr(tools, "fetch_execution_error", lambda i: {"node": "HTTP", "message": "401"})
+    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: TestModel(custom_output_text="Token kedaluwarsa."))
+    r = explain.explain_failures()
+    assert len(r) == 1 and r[0].error_node == "HTTP" and r[0].explanation == "Token kedaluwarsa."
+
+
+def test_explain_failures_survives_llm_error(monkeypatch):
+    from n8n import explain
+
+    monkeypatch.setattr(tools, "fetch_health_data", lambda progress=None: [
+        {"id": "1", "name": "bad", "active": True, "executions": [{"id": "8", "status": "error"}]}])
+    monkeypatch.setattr(tools, "fetch_recent_executions", lambda i, n: [{"id": "8"}])
+    monkeypatch.setattr(tools, "fetch_execution_error", lambda i: {"node": "HTTP", "message": "401"})
+
+    class Boom:
+        def __getattr__(self, n): raise RuntimeError("down")
+    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: Boom())
+    r = explain.explain_failures()
+    assert r[0].error_message == "401" and r[0].explanation.startswith("(LLM gagal")
