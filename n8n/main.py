@@ -1,6 +1,6 @@
 from core.http import ApiError
 from core.model import get_ollama_model
-from n8n import guard, tools
+from n8n import guard, health, tools
 from n8n.agent import agent
 from n8n.schemas import AgentResult, Deps
 
@@ -39,10 +39,9 @@ def apply_proposal(result: AgentResult) -> AgentResult:
 
 
 def run_health_check() -> AgentResult:
-    return _run(
-        "Cek kesehatan semua workflow: yang inactive, dan yang eksekusi "
-        "terakhirnya berstatus error/gagal. Buat HealthReport-nya (task=health_check)."
-    )
+    """Read-only dan deterministik: data dikumpulkan kode, tanpa LLM (cepat, tidak bergantung ukuran model)."""
+    report = health.build_report(tools.fetch_health_data())
+    return AgentResult(task="health_check", result=report.summary, report=report)
 
 
 def run_create_workflow(description: str) -> AgentResult:

@@ -1,6 +1,4 @@
 import pytest
-from pydantic_ai.models.test import TestModel
-
 from core import config
 from core.http import ApiError
 from n8n import guard, main, tools
@@ -86,7 +84,31 @@ def test_fetch_workflows_paginates_and_errors(monkeypatch):
         tools.fetch_workflows()
 
 
-def test_health_check_end_to_end_with_test_model(monkeypatch):
-    out = AgentResult(task="health_check", result="ok").model_dump()
-    monkeypatch.setattr(main, "get_ollama_model", lambda: TestModel(custom_output_args=out, call_tools=[]))
-    assert main.run_health_check().task == "health_check"
+def test_health_report_classification():
+    from n8n import health
+    data = [
+        {"id": "1", "name": "ok", "active": True, "executions": [{"id": "9", "status": "success"}]},
+        {"id": "2", "name": "bad", "active": True, "executions": [{"id": "8", "status": "error", "startedAt": "t"}]},
+        {"id": "3", "name": "off", "active": False, "executions": []},
+        {"id": "4", "name": "noexec", "active": True, "executions": [], "error": "HTTP 500"},
+    ]
+    r = health.build_report(data)
+    assert [i.status for i in r.issues] == ["failing", "error", "inactive"]
+    assert "1 sehat" in r.summary and "4 workflow" in r.summary
+
+
+def test_run_health_check_does_not_call_llm(monkeypatch):
+    monkeypatch.setattr(tools, "fetch_health_data", lambda: [{"id": "1", "name": "a", "active": False, "executions": []}])
+    monkeypatch.setattr(main, "get_ollama_model", lambda: (_ for _ in ()).throw(AssertionError("LLM dipanggil")))
+    r = main.run_health_check()
+    assert r.task == "health_check" and r.report.issues[0].status == "inactive"
+
+
+def test_fetch_health_data_isolates_errors(monkeypatch):
+    monkeypatch.setattr(tools, "fetch_workflows", lambda: [
+        {"id": "1", "name": "a", "active": True}, {"id": "2", "name": "b", "active": False}])
+    def execs(i, n):
+        raise ApiError("boom")
+    monkeypatch.setattr(tools, "fetch_recent_executions", execs)
+    d = tools.fetch_health_data()
+    assert "error" in d[0] and d[1]["executions"] == []

@@ -75,3 +75,21 @@ def set_workflow_active(workflow_id: str, active: bool) -> str:
     action = "activate" if active else "deactivate"
     resp = _call("POST", f"/workflows/{workflow_id}/{action}")
     return f"Workflow {'diaktifkan' if active else 'dinonaktifkan'} (status {resp.status_code})."
+
+
+def fetch_health_data(max_workers: int = 8) -> list[dict]:
+    """Semua workflow + status eksekusi terakhir (paralel). Workflow inactive tidak perlu dicek eksekusinya."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from core.http import ApiError
+
+    def one(w: dict) -> dict:
+        if not w["active"]:
+            return {**w, "executions": []}
+        try:
+            return {**w, "executions": fetch_recent_executions(w["id"], 3)}
+        except ApiError as e:
+            return {**w, "executions": [], "error": str(e)}
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        return list(pool.map(one, fetch_workflows()))
