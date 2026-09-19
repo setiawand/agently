@@ -1,0 +1,17 @@
+[project]
+name = "agently"
+version = "0.1.0"
+description = "Lightweight tool-calling agents (Pydantic AI + Ollama) for CI/CD and n8n ops"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic-ai>=1.0,<3",
+    "pydantic",
+    "requests>=2.31",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
