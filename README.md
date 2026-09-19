@@ -43,6 +43,7 @@ cp .env.example .env    # lalu isi nilainya
 |----------|--------------|------------|
 | `OLLAMA_URL` | semua agent | Harus berakhiran `/v1`. Default `http://localhost:11434/v1` |
 | `OLLAMA_MODEL` | semua agent | Default `qwen2.5-coder:32b` |
+| `LLM_THINKING` | semua agent | `off` = matikan mode thinking (kirim `reasoning_effort=none`). Mempercepat model lokal seperti qwen3.5 |
 | `LLM_PROVIDER` | semua agent | `ollama` (default) atau `openrouter` |
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | jika `openrouter` | Model dalam format OpenRouter, mis. `qwen/qwen-2.5-72b-instruct` |
 | `GITLAB_URL`, `GITLAB_TOKEN` | `ci_cd` | URL tanpa trailing slash; token dengan scope `api` |
@@ -198,6 +199,7 @@ Test berjalan tanpa jaringan dan tanpa LLM asli (HTTP di-mock, agent memakai `Te
 | `ApiError ... HTTP 401` | Token/API key salah |
 | Agent lama atau berputar | Model terlalu kecil untuk tool calling berantai. Coba model lebih besar, atau pindahkan pengumpulan data ke kode seperti health check |
 | `Failed to build agently` saat install | Pastikan `[tool.setuptools] packages` ada di `pyproject.toml` (sudah ada di versi terbaru) |
+| Model lokal lambat di `menunggu model...` | Lihat trace: banyak `THINKING` atau `out=` besar berarti model terlalu banyak berpikir, coba `LLM_THINKING=off`. Cek juga `ollama ps` (kolom PROCESSOR: kalau ada CPU, model tidak muat penuh di GPU/RAM) |
 | Banner pydantic-ai mengganggu | `export PYDANTIC_AI_NO_BANNER=1` |
 
 ## Belum ada

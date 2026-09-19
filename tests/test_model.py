@@ -58,3 +58,10 @@ def test_trace_off_is_silent(monkeypatch, capsys):
     monkeypatch.setattr(config, "TRACE", False)
     run_agent(Agent(None), "halo", model=TestModel())
     assert capsys.readouterr().err == ""
+
+
+def test_thinking_off(monkeypatch):
+    monkeypatch.setattr(config, "LLM_THINKING", "off")
+    assert get_model("x", provider="ollama").settings["openai_reasoning_effort"] == "none"
+    monkeypatch.setattr(config, "LLM_THINKING", "")
+    assert not get_model("x", provider="ollama").settings
