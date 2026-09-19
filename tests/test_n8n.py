@@ -98,7 +98,7 @@ def test_health_report_classification():
 
 
 def test_run_health_check_does_not_call_llm(monkeypatch):
-    monkeypatch.setattr(tools, "fetch_health_data", lambda: [{"id": "1", "name": "a", "active": False, "executions": []}])
+    monkeypatch.setattr(tools, "fetch_health_data", lambda progress=None: [{"id": "1", "name": "a", "active": False, "executions": []}])
     monkeypatch.setattr(main, "get_ollama_model", lambda: (_ for _ in ()).throw(AssertionError("LLM dipanggil")))
     r = main.run_health_check()
     assert r.task == "health_check" and r.report.issues[0].status == "inactive"
