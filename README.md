@@ -61,6 +61,19 @@ python -m n8n.main > health.json        # simpan hasilnya saja
 
 Setiap workflow diklasifikasi `failing` (eksekusi terakhir error/crashed), `error` (eksekusi gagal dibaca), atau `inactive`. Yang sehat tidak masuk daftar `issues`.
 
+### n8n: ringkasan health check (LLM kecil, tanpa tool)
+
+Ringkasan singkat siap kirim (Telegram/Slack). Inputnya sudah dipadatkan oleh kode; kalau LLM gagal, hasilnya jatuh ke ringkasan deterministik.
+
+```bash
+OLLAMA_MODEL=qwen3.5:9b python -m n8n.explain summary
+```
+
+```python
+from n8n.explain import summarize_health
+print(summarize_health(model_name="qwen3.5:9b"))
+```
+
 ### n8n: penjelasan kegagalan (LLM kecil, tanpa tool)
 
 Kode mengambil workflow `failing` beserta node dan pesan error eksekusi terakhir. LLM hanya menulis penjelasan singkat, tanpa tool dan tanpa JSON terstruktur, jadi cocok untuk model kecil atau kuantisasi agresif.

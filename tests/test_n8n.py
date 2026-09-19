@@ -151,3 +151,24 @@ def test_explain_failures_survives_llm_error(monkeypatch):
     monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: Boom())
     r = explain.explain_failures()
     assert r[0].error_message == "401" and r[0].explanation.startswith("(LLM gagal")
+
+
+_DATA = [
+    {"id": "1", "name": "bad", "active": True, "executions": [{"id": "8", "status": "error", "startedAt": "t"}]},
+    {"id": "2", "name": "off", "active": False, "executions": []},
+]
+
+
+def test_summarize_health_uses_llm_and_falls_back(monkeypatch):
+    from pydantic_ai.models.test import TestModel
+    from n8n import explain
+
+    monkeypatch.setattr(tools, "fetch_health_data", lambda progress=None: _DATA)
+    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: TestModel(custom_output_text="Ada 1 workflow gagal."))
+    assert explain.summarize_health() == "Ada 1 workflow gagal."
+
+    class Boom:
+        def __getattr__(self, n): raise RuntimeError("down")
+    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: Boom())
+    out = explain.summarize_health()
+    assert "2 workflow" in out and "gagal" in out
