@@ -74,3 +74,8 @@ Jangan daftarkan tool tulis ke `@agent.tool`.
 
 Lihat `.env.example`. Ringkasnya: `OLLAMA_URL`, `OLLAMA_MODEL` (shared),
 `GITLAB_URL` + `GITLAB_TOKEN` (ci_cd), `N8N_URL` + `N8N_API_KEY` (n8n).
+
+## Aturan kerja
+
+Setiap perubahan kode/perilaku/konfigurasi langsung disertai update `README.md` (dan `.env.example`
+bila ada env var baru) dalam commit yang sama. Jangan menunda dokumentasi ke akhir.

@@ -43,6 +43,7 @@ cp .env.example .env    # lalu isi nilainya
 |----------|--------------|------------|
 | `OLLAMA_URL` | semua agent | Harus berakhiran `/v1`. Default `http://localhost:11434/v1` |
 | `OLLAMA_MODEL` | semua agent | Default `qwen2.5-coder:32b` |
+| `AGENTLY_TRACE` | semua agent | `1` = tampilkan aktivitas model langkah demi langkah di stderr (lihat bagian trace) |
 | `LLM_THINKING` | semua agent | `off` = matikan mode thinking (kirim `reasoning_effort=none`). Mempercepat model lokal seperti qwen3.5 |
 | `LLM_PROVIDER` | semua agent | `ollama` (default) atau `openrouter` |
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | jika `openrouter` | Model dalam format OpenRouter, mis. `qwen/qwen-2.5-72b-instruct` |
