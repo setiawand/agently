@@ -17,7 +17,7 @@ yang tidak perlu untuk kasus single-agent tool-calling). Pydantic AI dipilih kar
 Semua agent pakai Ollama yang jalan di server RTX 4090 kantor (4x GPU),
 model default `qwen2.5-coder:32b`. Konfigurasi di `core/config.py` dan
 `core/model.py` — jangan duplikasi setup Ollama di tiap agent, selalu
-import dari `core.model.get_ollama_model()`.
+import dari `core.model.get_model()` (provider via `LLM_PROVIDER`: ollama default, atau openrouter -- cloud, data keluar jaringan).
 
 ## Prinsip desain: human-in-the-loop gate
 

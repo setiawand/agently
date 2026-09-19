@@ -99,7 +99,7 @@ def test_health_report_classification():
 
 def test_run_health_check_does_not_call_llm(monkeypatch):
     monkeypatch.setattr(tools, "fetch_health_data", lambda progress=None: [{"id": "1", "name": "a", "active": False, "executions": []}])
-    monkeypatch.setattr(main, "get_ollama_model", lambda: (_ for _ in ()).throw(AssertionError("LLM dipanggil")))
+    monkeypatch.setattr(main, "get_model", lambda: (_ for _ in ()).throw(AssertionError("LLM dipanggil")))
     r = main.run_health_check()
     assert r.task == "health_check" and r.report.issues[0].status == "inactive"
 
@@ -133,7 +133,7 @@ def test_explain_failures(monkeypatch):
     ])
     monkeypatch.setattr(tools, "fetch_recent_executions", lambda i, n: [{"id": "8"}])
     monkeypatch.setattr(tools, "fetch_execution_error", lambda i: {"node": "HTTP", "message": "401"})
-    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: TestModel(custom_output_text="Token kedaluwarsa."))
+    monkeypatch.setattr(explain, "get_model", lambda name=None: TestModel(custom_output_text="Token kedaluwarsa."))
     r = explain.explain_failures()
     assert len(r) == 1 and r[0].error_node == "HTTP" and r[0].explanation == "Token kedaluwarsa."
 
@@ -148,7 +148,7 @@ def test_explain_failures_survives_llm_error(monkeypatch):
 
     class Boom:
         def __getattr__(self, n): raise RuntimeError("down")
-    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: Boom())
+    monkeypatch.setattr(explain, "get_model", lambda name=None: Boom())
     r = explain.explain_failures()
     assert r[0].error_message == "401" and r[0].explanation.startswith("(LLM gagal")
 
@@ -164,11 +164,11 @@ def test_summarize_health_uses_llm_and_falls_back(monkeypatch):
     from n8n import explain
 
     monkeypatch.setattr(tools, "fetch_health_data", lambda progress=None: _DATA)
-    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: TestModel(custom_output_text="Ada 1 workflow gagal."))
+    monkeypatch.setattr(explain, "get_model", lambda name=None: TestModel(custom_output_text="Ada 1 workflow gagal."))
     assert explain.summarize_health() == "Ada 1 workflow gagal."
 
     class Boom:
         def __getattr__(self, n): raise RuntimeError("down")
-    monkeypatch.setattr(explain, "get_ollama_model", lambda name=None: Boom())
+    monkeypatch.setattr(explain, "get_model", lambda name=None: Boom())
     out = explain.summarize_health()
     assert "2 workflow" in out and "gagal" in out

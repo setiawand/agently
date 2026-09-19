@@ -43,10 +43,25 @@ cp .env.example .env    # lalu isi nilainya
 |----------|--------------|------------|
 | `OLLAMA_URL` | semua agent | Harus berakhiran `/v1`. Default `http://localhost:11434/v1` |
 | `OLLAMA_MODEL` | semua agent | Default `qwen2.5-coder:32b` |
+| `LLM_PROVIDER` | semua agent | `ollama` (default) atau `openrouter` |
+| `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | jika `openrouter` | Model dalam format OpenRouter, mis. `qwen/qwen-2.5-72b-instruct` |
 | `GITLAB_URL`, `GITLAB_TOKEN` | `ci_cd` | URL tanpa trailing slash; token dengan scope `api` |
 | `N8N_URL`, `N8N_API_KEY` | `n8n` | API key dari Settings > n8n API |
 
-Semua diambil dari `core/config.py`. Model dibuat lewat `core.model.get_ollama_model()`, jangan menduplikasi setup Ollama di agent.
+Semua diambil dari `core/config.py`. Model dibuat lewat `core.model.get_model()`, jangan menduplikasi setup model di agent.
+
+### Memakai OpenRouter
+
+```bash
+# .env
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=qwen/qwen-2.5-72b-instruct
+```
+
+Atau per panggilan: `get_model("nama/model", provider="openrouter")`; fungsi `summarize_health` dan `explain_failures` menerima `model_name` yang akan dipakai bersama provider dari env.
+
+> **Perhatian data:** dengan OpenRouter, isi prompt (nama workflow, pesan error, log CI) dikirim ke pihak ketiga di luar jaringan kantor. Log CI memang sudah dibersihkan dari secret pola umum, tetapi nama workflow/error tidak difilter. Untuk konteks bank, pastikan kebijakan yang berlaku mengizinkan, atau tetap pakai Ollama on-prem untuk agent CI/CD.
 
 ## Cara pakai
 

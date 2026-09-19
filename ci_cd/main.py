@@ -1,6 +1,6 @@
 """Entry point tipis -- panggil dari webhook GitLab (event pipeline, status=failed) atau CLI."""
 
-from core.model import get_ollama_model
+from core.model import get_model
 from ci_cd.agent import agent
 from ci_cd.schemas import Deps, Diagnosis
 from ci_cd import tools
@@ -14,7 +14,7 @@ def diagnose_pipeline(project_id: int, pipeline_id: int, mr_iid: int | None = No
         f"A GitLab pipeline just failed. project_id={project_id}, "
         f"pipeline_id={pipeline_id}. Diagnose it.",
         deps=deps,
-        model=get_ollama_model(),
+        model=get_model(),
     )
     diagnosis = result.output
 

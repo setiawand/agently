@@ -16,3 +16,8 @@ GITLAB_TOKEN = os.environ.get("GITLAB_TOKEN", "")
 # n8n agent
 N8N_URL = os.environ.get("N8N_URL", "").rstrip("/")
 N8N_API_KEY = os.environ.get("N8N_API_KEY", "")
+
+# Pemilihan LLM: "ollama" (default, lokal/on-prem) atau "openrouter" (cloud pihak ketiga)
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "ollama").lower()
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "")

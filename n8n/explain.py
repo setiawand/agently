@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from pydantic_ai import Agent
 
 from core.http import ApiError
-from core.model import get_ollama_model
+from core.model import get_model
 from n8n import health, tools
 
 explainer = Agent(
@@ -45,7 +45,7 @@ class FailureExplanation(BaseModel):
 def explain_failures(model_name: str | None = None, progress=None) -> list[FailureExplanation]:
     report = health.build_report(tools.fetch_health_data(progress=progress))
     failing = [i for i in report.issues if i.status == "failing"]
-    model = get_ollama_model(model_name)
+    model = get_model(model_name)
     out: list[FailureExplanation] = []
 
     for n, issue in enumerate(failing, 1):
@@ -84,7 +84,7 @@ def summarize_health(model_name: str | None = None, progress=None) -> str:
         lines.append(f"- inactive ({len(inactive)}): " + ", ".join(inactive[:15]) + (", ..." if len(inactive) > 15 else ""))
     try:
         prompt = "<data_health_check>\n" + "\n".join(lines) + "\n</data_health_check>"
-        return summarizer.run_sync(prompt, model=get_ollama_model(model_name)).output.strip()
+        return summarizer.run_sync(prompt, model=get_model(model_name)).output.strip()
     except Exception as e:  # jangan sampai notifikasi mati hanya karena model lokal bermasalah
         return f"{report.summary} (ringkasan LLM gagal: {type(e).__name__})"
 

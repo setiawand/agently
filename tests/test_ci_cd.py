@@ -60,7 +60,7 @@ def _run_with(monkeypatch, action, confidence, mr_iid=7):
     monkeypatch.setattr(tools, "fetch_failed_job_log", lambda *a: "log")
     out = Diagnosis(root_cause="x", confidence=confidence, suggested_action=action, comment_text="c")
     with agent.override(model=TestModel(custom_output_args=out.model_dump())):
-        monkeypatch.setattr(main, "get_ollama_model", lambda: TestModel(custom_output_args=out.model_dump()))
+        monkeypatch.setattr(main, "get_model", lambda: TestModel(custom_output_args=out.model_dump()))
         main.diagnose_pipeline(1, 2, mr_iid)
     return posted
 
