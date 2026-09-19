@@ -77,9 +77,12 @@ def set_workflow_active(workflow_id: str, active: bool) -> str:
     return f"Workflow {'diaktifkan' if active else 'dinonaktifkan'} (status {resp.status_code})."
 
 
-def fetch_health_data(max_workers: int = 8) -> list[dict]:
-    """Semua workflow + status eksekusi terakhir (paralel). Workflow inactive tidak perlu dicek eksekusinya."""
-    from concurrent.futures import ThreadPoolExecutor
+def fetch_health_data(max_workers: int = 8, progress=None) -> list[dict]:
+    """Semua workflow + status eksekusi terakhir (paralel). Workflow inactive tidak perlu dicek eksekusinya.
+
+    progress(done, total, workflow_name) dipanggil tiap satu workflow selesai.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     from core.http import ApiError
 
@@ -91,5 +94,16 @@ def fetch_health_data(max_workers: int = 8) -> list[dict]:
         except ApiError as e:
             return {**w, "executions": [], "error": str(e)}
 
+    workflows = fetch_workflows()
+    total = len(workflows)
+    if progress:
+        progress(0, total, "daftar workflow diambil")
+    results: list[dict | None] = [None] * total
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        return list(pool.map(one, fetch_workflows()))
+        futures = {pool.submit(one, w): idx for idx, w in enumerate(workflows)}
+        for done, fut in enumerate(as_completed(futures), 1):
+            res = fut.result()
+            results[futures[fut]] = res
+            if progress:
+                progress(done, total, res["name"])
+    return results  # type: ignore[return-value]

@@ -1,3 +1,5 @@
+import sys
+
 from core.http import ApiError
 from core.model import get_ollama_model
 from n8n import guard, health, tools
@@ -38,9 +40,9 @@ def apply_proposal(result: AgentResult) -> AgentResult:
     return result
 
 
-def run_health_check() -> AgentResult:
+def run_health_check(progress=None) -> AgentResult:
     """Read-only dan deterministik: data dikumpulkan kode, tanpa LLM (cepat, tidak bergantung ukuran model)."""
-    report = health.build_report(tools.fetch_health_data())
+    report = health.build_report(tools.fetch_health_data(progress=progress))
     return AgentResult(task="health_check", result=report.summary, report=report)
 
 
@@ -59,5 +61,10 @@ def run_fix_workflow(workflow_id: str, problem_description: str) -> AgentResult:
     ))
 
 
+def _stderr_progress(done: int, total: int, name: str) -> None:
+    print(f"[{done}/{total}] {name[:70]}", file=sys.stderr, flush=True)
+
+
 if __name__ == "__main__":
-    print(run_health_check().model_dump_json(indent=2))
+    print("Mengambil daftar workflow dari n8n...", file=sys.stderr, flush=True)
+    print(run_health_check(progress=_stderr_progress).model_dump_json(indent=2))

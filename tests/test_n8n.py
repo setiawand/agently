@@ -112,3 +112,12 @@ def test_fetch_health_data_isolates_errors(monkeypatch):
     monkeypatch.setattr(tools, "fetch_recent_executions", execs)
     d = tools.fetch_health_data()
     assert "error" in d[0] and d[1]["executions"] == []
+
+
+def test_fetch_health_data_reports_progress(monkeypatch):
+    monkeypatch.setattr(tools, "fetch_workflows", lambda: [
+        {"id": str(i), "name": f"w{i}", "active": False} for i in range(3)])
+    seen = []
+    d = tools.fetch_health_data(progress=lambda done, total, name: seen.append((done, total)))
+    assert [w["id"] for w in d] == ["0", "1", "2"]
+    assert seen == [(0, 3), (1, 3), (2, 3), (3, 3)]
